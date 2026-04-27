@@ -61,6 +61,15 @@ class CashierController extends Controller
         }
 
         if ($card->balance < $totalAmount) {
+            // Kirim respon error ke ESP32 agar buzzer bunyi error
+            if ($request->device_id) {
+                $firebase = app(\App\Services\FirebaseService::class);
+                $firebase->sendResponse($request->device_id, [
+                    'status' => 'error',
+                    'message' => 'Saldo Kurang'
+                ]);
+            }
+
             return response()->json([
                 'success' => false, 
                 'message' => 'Saldo tidak mencukupi!',
@@ -69,7 +78,7 @@ class CashierController extends Controller
             ], 400);
         }
 
-        return DB::transaction(function () use ($card, $totalAmount, $orderItems) {
+        $result = DB::transaction(function () use ($card, $totalAmount, $orderItems) {
             // Potong saldo
             $card->decrement('balance', $totalAmount);
 
@@ -85,14 +94,27 @@ class CashierController extends Controller
                 $order->items()->create($item);
             }
 
-            return response()->json([
+            return [
                 'success' => true,
                 'message' => 'Pembayaran berhasil!',
                 'order_id' => $order->id,
                 'user_name' => $card->user->name,
                 'new_balance' => number_format($card->balance, 0, ',', '.')
-            ]);
+            ];
         });
+
+        // Kirim respon ke ESP32 agar buzzer bunyi success
+        if ($request->device_id) {
+            $firebase = app(\App\Services\FirebaseService::class);
+            $firebase->sendResponse($request->device_id, [
+                'status' => 'success',
+                'user_name' => $card->user->name,
+                'balance' => $card->balance,
+                'message' => 'Pembayaran Berhasil'
+            ]);
+        }
+
+        return response()->json($result);
     }
 
     public function pollScan()
@@ -101,11 +123,13 @@ class CashierController extends Controller
         $scan = $firebase->get('scans/latest');
 
         if ($scan && ($scan['status'] ?? '') === 'pending') {
-            // Kita kembalikan UID tapi biarkan statusnya pending
-            // agar FirebaseListener juga melihatnya (atau kita bisa tandai sebagai pos-processing)
+            // Tandai sebagai processing agar tidak diambil lagi oleh polling lain
+            $firebase->update('scans/latest', ['status' => 'processing']);
+
             return response()->json([
                 'success' => true,
-                'uid' => $scan['rfid_uid']
+                'uid' => $scan['rfid_uid'],
+                'device_id' => $scan['device_id'] ?? 'unknown'
             ]);
         }
 

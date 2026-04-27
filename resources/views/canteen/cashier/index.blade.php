@@ -195,16 +195,21 @@
         renderCart();
     }
 
+    const cartContainer = document.getElementById('cart-items');
+    const emptyState = document.getElementById('empty-cart');
+
     function renderCart() {
-        const container = document.getElementById('cart-items');
-        const empty = document.getElementById('empty-cart');
-        
         if (cart.length === 0) {
-            container.innerHTML = '';
-            container.appendChild(empty);
+            cartContainer.innerHTML = '';
+            cartContainer.appendChild(emptyState);
+            emptyState.style.display = 'block';
             total = 0;
         } else {
-            container.innerHTML = cart.map(item => `
+            emptyState.style.display = 'none';
+            cartContainer.innerHTML = '';
+            cartContainer.appendChild(emptyState); // Keep it in DOM
+            
+            const itemsHtml = cart.map(item => `
                 <div class="cart-item">
                     <div>
                         <div style="font-weight: 700; color: #1e293b;">${item.name}</div>
@@ -217,6 +222,8 @@
                     </div>
                 </div>
             `).join('');
+            
+            cartContainer.insertAdjacentHTML('beforeend', itemsHtml);
             lucide.createIcons();
             total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
         }
@@ -245,7 +252,7 @@
                 const response = await fetch('/canteen/cashier/poll-scan');
                 const data = await response.json();
                 if (data.success && data.uid) {
-                    processPayment(data.uid);
+                    processPayment(data.uid, data.device_id);
                 }
             } catch (e) {}
         }, 2000);
@@ -273,7 +280,7 @@
         }
     }
 
-    async function processPayment(uid) {
+    async function processPayment(uid, deviceId = null) {
         stopFirebasePolling();
         
         document.getElementById('payment-step-scan').style.display = 'none';
@@ -288,6 +295,7 @@
                 },
                 body: JSON.stringify({
                     rfid_uid: uid,
+                    device_id: deviceId,
                     items: cart.map(i => ({ id: i.id, quantity: i.qty }))
                 })
             });

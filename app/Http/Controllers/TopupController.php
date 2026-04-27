@@ -7,6 +7,7 @@ use App\Models\RfidCard;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TopupController extends Controller
 {
@@ -32,19 +33,23 @@ class TopupController extends Controller
             'method' => 'required|in:cash,transfer',
         ]);
 
-        $topup = Topup::create([
-            'user_id' => $request->user_id,
-            'amount' => $request->amount,
-            'status' => 'success',
-            'method' => $request->method,
-            'approved_by' => Auth::id(),
-        ]);
-
-        // Add balance to RFID card
         $rfidCard = RfidCard::where('user_id', $request->user_id)->first();
-        if ($rfidCard) {
-            $rfidCard->increment('balance', $request->amount);
+        
+        if (!$rfidCard) {
+            return back()->withErrors(['user_id' => 'Siswa ini belum memiliki kartu RFID yang terdaftar.']);
         }
+
+        DB::transaction(function() use ($request, $rfidCard) {
+            Topup::create([
+                'user_id' => $request->user_id,
+                'amount' => $request->amount,
+                'status' => 'success',
+                'method' => $request->method,
+                'approved_by' => Auth::id(),
+            ]);
+
+            $rfidCard->increment('balance', $request->amount);
+        });
 
         return back()->with('success', 'Top-up saldo berhasil! Rp ' . number_format($request->amount, 0, ',', '.'));
     }

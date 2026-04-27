@@ -122,7 +122,10 @@
             // Listen for latest scan
             database.ref('scans/latest').on('value', (snapshot) => {
                 const data = snapshot.val();
-                if (data && data.rfid_uid) {
+                const modal = document.getElementById('modal-register');
+                
+                // Only fill if modal is active and data is pending
+                if (data && data.rfid_uid && modal.classList.contains('active') && data.status === 'pending') {
                     uidInput.value = data.rfid_uid;
                     
                     // Visual feedback
@@ -133,11 +136,8 @@
                         uidInput.style.borderColor = '#e2e8f0';
                         uidInput.style.backgroundColor = 'white';
                     }, 2000);
-
-                    // Show notification if modal is open
-                    if (document.getElementById('modal-register').classList.contains('active')) {
-                        console.log("Card detected: " + data.rfid_uid);
-                    }
+                    
+                    console.log("Card detected: " + data.rfid_uid);
                 }
             });
         };
