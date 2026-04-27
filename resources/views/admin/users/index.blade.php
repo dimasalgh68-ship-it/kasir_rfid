@@ -31,7 +31,8 @@
                 @endif
             </td>
             <td style="font-weight:700;">{{ $user->rfidCard ? 'Rp '.number_format($user->rfidCard->balance, 0, ',', '.') : '—' }}</td>
-            <td>
+            <td style="display:flex;gap:0.5rem;">
+                <button onclick="editUser({{ $user }})" class="btn btn-outline" style="padding:0.4rem 0.75rem;font-size:0.8rem;">Edit</button>
                 @if($user->id !== Auth::id())
                 <form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Hapus pengguna ini?')">
                     @csrf @method('DELETE')
@@ -79,5 +80,49 @@
     </div>
 </div>
 
-<script>lucide.createIcons();</script>
+<!-- Modal Edit User -->
+<div class="modal-overlay" id="modal-edit-user">
+    <div class="modal">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+            <h3 style="margin:0;">Edit Pengguna</h3>
+            <button onclick="document.getElementById('modal-edit-user').classList.remove('active')" style="background:none;border:none;cursor:pointer;color:#94a3b8;"><i data-lucide="x" size="20"></i></button>
+        </div>
+        <form id="form-edit-user" method="POST">
+            @csrf @method('PATCH')
+            <div class="form-group">
+                <label class="form-label">Nama Lengkap</label>
+                <input type="text" name="name" id="edit_name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" id="edit_email" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password (kosongkan jika tidak diubah)</label>
+                <input type="password" name="password" class="form-input" minlength="6">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Role</label>
+                <select name="role" id="edit_role" class="form-select" required>
+                    <option value="student">👨‍🎓 Siswa</option>
+                    <option value="canteen">🍽️ Petugas Kantin</option>
+                    <option value="admin">🛡️ Admin</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:0.5rem;">Simpan Perubahan</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+
+    function editUser(user) {
+        document.getElementById('edit_name').value = user.name;
+        document.getElementById('edit_email').value = user.email;
+        document.getElementById('edit_role').value = user.role;
+        document.getElementById('form-edit-user').action = `/admin/users/${user.id}`;
+        document.getElementById('modal-edit-user').classList.add('active');
+    }
+</script>
 @endsection

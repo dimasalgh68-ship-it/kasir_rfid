@@ -53,4 +53,18 @@ class TopupController extends Controller
 
         return back()->with('success', 'Top-up saldo berhasil! Rp ' . number_format($request->amount, 0, ',', '.'));
     }
+
+    public function destroy(Topup $topup)
+    {
+        $rfidCard = RfidCard::where('user_id', $topup->user_id)->first();
+
+        DB::transaction(function() use ($topup, $rfidCard) {
+            if ($rfidCard) {
+                $rfidCard->decrement('balance', $topup->amount);
+            }
+            $topup->delete();
+        });
+
+        return back()->with('success', 'Top-up berhasil dibatalkan dan saldo telah dikurangi.');
+    }
 }

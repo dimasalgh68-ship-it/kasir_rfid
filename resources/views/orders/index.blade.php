@@ -9,7 +9,7 @@
 
 <div class="table-container">
     <table class="table">
-        <thead><tr><th>ID</th>@if(Auth::user()->isAdmin() || Auth::user()->isCanteen())<th>Siswa</th>@endif<th>Item</th><th>Total</th><th>Metode</th><th>Status</th><th>Waktu</th></tr></thead>
+        <thead><tr><th>ID</th>@if(Auth::user()->isAdmin() || Auth::user()->isCanteen())<th>Siswa</th>@endif<th>Item</th><th>Total</th><th>Metode</th><th>Status</th><th>Waktu</th>@if(Auth::user()->isAdmin() || Auth::user()->isCanteen())<th>Aksi</th>@endif</tr></thead>
         <tbody>
         @forelse($orders as $order)
         <tr>
@@ -26,9 +26,17 @@
             <td><span class="badge badge-info" style="text-transform:uppercase;">{{ $order->payment_method }}</span></td>
             <td><span class="badge badge-{{ $order->status === 'completed' ? 'success' : 'warning' }}">{{ ucfirst($order->status) }}</span></td>
             <td style="color:#64748b;">{{ $order->created_at->format('d M Y, H:i') }}</td>
+            @if(Auth::user()->isAdmin() || Auth::user()->isCanteen())
+            <td>
+                <form method="POST" action="{{ route('orders.destroy', $order) }}" onsubmit="return confirm('Batalkan pesanan ini? Saldo dan stok akan dikembalikan.')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-danger" style="padding:0.4rem 0.75rem;font-size:0.8rem;">Batalkan</button>
+                </form>
+            </td>
+            @endif
         </tr>
         @empty
-        <tr><td colspan="7" class="empty-state"><i data-lucide="receipt" size="40"></i><p>Belum ada riwayat order</p></td></tr>
+        <tr><td colspan="8" class="empty-state"><i data-lucide="receipt" size="40"></i><p>Belum ada riwayat order</p></td></tr>
         @endforelse
         </tbody>
     </table>

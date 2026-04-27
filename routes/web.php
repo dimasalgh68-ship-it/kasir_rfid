@@ -27,20 +27,24 @@ Route::middleware('auth')->group(function () {
     // Orders (all authenticated users)
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
 
     // Admin Routes
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('/rfid', [RfidController::class, 'index'])->name('rfid.index');
         Route::post('/rfid/register', [RfidController::class, 'register'])->name('rfid.register');
+        Route::patch('/rfid/{card}', [RfidController::class, 'update'])->name('rfid.update');
         Route::patch('/rfid/{card}/toggle', [RfidController::class, 'toggleStatus'])->name('rfid.toggle');
         Route::delete('/rfid/{card}', [RfidController::class, 'destroy'])->name('rfid.destroy');
 
         Route::get('/topup', [TopupController::class, 'index'])->name('topup.index');
         Route::post('/topup', [TopupController::class, 'store'])->name('topup.store');
+        Route::delete('/topup/{topup}', [TopupController::class, 'destroy'])->name('topup.destroy');
     });
 
     // Canteen / Admin Routes

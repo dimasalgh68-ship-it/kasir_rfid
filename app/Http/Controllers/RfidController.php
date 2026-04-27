@@ -37,6 +37,24 @@ class RfidController extends Controller
         return back()->with('success', 'Kartu RFID berhasil didaftarkan!');
     }
 
+    public function update(Request $request, RfidCard $card)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id|unique:rfid_cards,user_id,'.$card->id,
+            'rfid_uid' => 'required|string|unique:rfid_cards,rfid_uid,'.$card->id,
+        ], [
+            'user_id.unique' => 'Siswa ini sudah memiliki kartu RFID lain.',
+            'rfid_uid.unique' => 'UID Kartu ini sudah digunakan oleh kartu lain.',
+        ]);
+
+        $card->update([
+            'user_id' => $request->user_id,
+            'rfid_uid' => $request->rfid_uid,
+        ]);
+
+        return back()->with('success', 'Data kartu berhasil diperbarui!');
+    }
+
     public function toggleStatus(RfidCard $card)
     {
         $card->update(['is_active' => !$card->is_active]);

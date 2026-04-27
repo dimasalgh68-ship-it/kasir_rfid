@@ -5,18 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\MenuItem;
 use App\Models\RfidCard;
 use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 
 class CashierController extends Controller
 {
     public function index()
     {
-        $categories = MenuItem::select('category')->distinct()->pluck('category');
         $menuItems = MenuItem::where('is_available', true)->get();
+        $categories = MenuItem::select('category')->distinct()->pluck('category');
         return view('canteen.cashier.index', compact('menuItems', 'categories'));
     }
 
@@ -67,71 +64,86 @@ class CashierController extends Controller
             ];
 
             $menuItemsToUpdate[] = [
-                'model' => $menuItem,
+                'id' => $menuItem->id,
                 'qty' => $itemData['quantity']
             ];
         }
 
-        if ($card->balance < $totalAmount) {
-            // Kirim respon error ke ESP32 agar buzzer bunyi error
+        try {
+            $result = DB::transaction(function () use ($card, $totalAmount, $orderItems, $menuItemsToUpdate) {
+                // Lock the card for update to prevent race conditions
+                $lockedCard = RfidCard::where('id', $card->id)->lockForUpdate()->first();
+
+                if ($lockedCard->balance < $totalAmount) {
+                    throw new \Exception('insufficient_balance');
+                }
+
+                // Potong saldo
+                $lockedCard->decrement('balance', $totalAmount);
+
+                // Kurangi stok menu
+                foreach ($menuItemsToUpdate as $item) {
+                    $menu = MenuItem::where('id', $item['id'])->lockForUpdate()->first();
+                    if ($menu) {
+                        $menu->decrement('stock', $item['qty']);
+                    }
+                }
+
+                // Simpan order
+                $order = Order::create([
+                    'user_id' => $card->user_id,
+                    'total_amount' => $totalAmount,
+                    'payment_method' => 'rfid',
+                    'status' => 'completed',
+                ]);
+
+                foreach ($orderItems as $item) {
+                    $order->items()->create($item);
+                }
+
+                return $order;
+            });
+
+            // Kirim respon ke ESP32 agar buzzer bunyi success
             if ($request->device_id) {
                 $firebase = app(\App\Services\FirebaseService::class);
                 $firebase->sendResponse($request->device_id, [
-                    'status' => 'error',
-                    'message' => 'Saldo Kurang'
+                    'status' => 'success',
+                    'message' => 'Berhasil'
                 ]);
             }
 
             return response()->json([
-                'success' => false, 
-                'message' => 'Saldo tidak mencukupi!',
-                'balance' => number_format($card->balance, 0, ',', '.'),
-                'required' => number_format($totalAmount, 0, ',', '.')
-            ], 400);
-        }
-
-        $result = DB::transaction(function () use ($card, $totalAmount, $orderItems, $menuItemsToUpdate) {
-            // Potong saldo
-            $card->decrement('balance', $totalAmount);
-
-            // Kurangi stok menu
-            foreach ($menuItemsToUpdate as $item) {
-                $item['model']->decrement('stock', $item['qty']);
-            }
-
-            // Simpan order
-            $order = Order::create([
-                'user_id' => $card->user_id,
-                'total_amount' => $totalAmount,
-                'payment_method' => 'rfid',
-                'status' => 'completed',
-            ]);
-
-            foreach ($orderItems as $item) {
-                $order->items()->create($item);
-            }
-
-            return [
                 'success' => true,
                 'message' => 'Pembayaran berhasil!',
-                'order_id' => $order->id,
+                'order_id' => $result->id,
                 'user_name' => $card->user->name,
-                'new_balance' => number_format($card->balance, 0, ',', '.')
-            ];
-        });
-
-        // Kirim respon ke ESP32 agar buzzer bunyi success
-        if ($request->device_id) {
-            $firebase = app(\App\Services\FirebaseService::class);
-            $firebase->sendResponse($request->device_id, [
-                'status' => 'success',
-                'user_name' => $card->user->name,
-                'balance' => $card->balance,
-                'message' => 'Pembayaran Berhasil'
+                'new_balance' => number_format($card->fresh()->balance, 0, ',', '.')
             ]);
-        }
 
-        return response()->json($result);
+        } catch (\Exception $e) {
+            if ($e->getMessage() === 'insufficient_balance') {
+                if ($request->device_id) {
+                    $firebase = app(\App\Services\FirebaseService::class);
+                    $firebase->sendResponse($request->device_id, [
+                        'status' => 'error',
+                        'message' => 'Saldo Kurang'
+                    ]);
+                }
+
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Saldo tidak mencukupi!',
+                    'balance' => number_format($card->balance, 0, ',', '.'),
+                    'required' => number_format($totalAmount, 0, ',', '.')
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function pollScan()
@@ -140,7 +152,6 @@ class CashierController extends Controller
         $scan = $firebase->get('scans/latest');
 
         if ($scan && ($scan['status'] ?? '') === 'pending') {
-            // Tandai sebagai processing agar tidak diambil lagi oleh polling lain
             $firebase->update('scans/latest', ['status' => 'processing']);
 
             return response()->json([

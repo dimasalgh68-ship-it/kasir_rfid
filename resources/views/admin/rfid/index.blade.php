@@ -30,6 +30,7 @@
             </td>
             <td style="color:#64748b;">{{ $card->created_at->format('d M Y') }}</td>
             <td style="display:flex;gap:0.5rem;">
+                <button onclick="editCard({{ $card }})" class="btn btn-outline" style="padding:0.4rem 0.75rem;font-size:0.8rem;">Edit</button>
                 <form method="POST" action="{{ route('admin.rfid.toggle', $card) }}">
                     @csrf @method('PATCH')
                     <button type="submit" class="btn {{ $card->is_active ? 'btn-outline' : 'btn-success' }}" style="padding:0.4rem 0.75rem;font-size:0.8rem;">
@@ -90,6 +91,31 @@
                 </style>
             </div>
             <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:0.5rem;">Daftarkan Kartu</button>
+        </form>
+    </div>
+</div>
+<!-- Modal Edit Card -->
+<div class="modal-overlay" id="modal-edit-card">
+    <div class="modal">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+            <h3 style="margin:0;">Edit Data Kartu</h3>
+            <button onclick="document.getElementById('modal-edit-card').classList.remove('active')" style="background:none;border:none;cursor:pointer;color:#94a3b8;"><i data-lucide="x" size="20"></i></button>
+        </div>
+        <form id="form-edit-card" method="POST">
+            @csrf @method('PATCH')
+            <div class="form-group">
+                <label class="form-label">Siswa</label>
+                <select name="user_id" id="edit_card_user_id" class="form-select" required>
+                    @foreach($allStudents as $student)
+                        <option value="{{ $student->id }}">{{ $student->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">UID Kartu</label>
+                <input type="text" name="rfid_uid" id="edit_card_rfid_uid" class="form-input" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:0.5rem;">Simpan Perubahan</button>
         </form>
     </div>
 </div>
@@ -172,6 +198,12 @@
                 alert("Error: " + error);
             }
         });
+    }
+    function editCard(card) {
+        document.getElementById('edit_card_user_id').value = card.user_id;
+        document.getElementById('edit_card_rfid_uid').value = card.rfid_uid;
+        document.getElementById('form-edit-card').action = `/admin/rfid/${card.id}`;
+        document.getElementById('modal-edit-card').classList.add('active');
     }
 </script>
 @endsection

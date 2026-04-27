@@ -14,7 +14,7 @@
 
 <div class="table-container">
     <table class="table">
-        <thead><tr><th>Siswa</th><th>Jumlah</th><th>Metode</th><th>Status</th><th>Diproses oleh</th><th>Waktu</th></tr></thead>
+        <thead><tr><th>Siswa</th><th>Jumlah</th><th>Metode</th><th>Status</th><th>Diproses oleh</th><th>Waktu</th><th>Aksi</th></tr></thead>
         <tbody>
         @forelse($topups as $topup)
         <tr>
@@ -24,9 +24,15 @@
             <td><span class="badge badge-{{ $topup->status === 'success' ? 'success' : ($topup->status === 'pending' ? 'warning' : 'danger') }}">{{ ucfirst($topup->status) }}</span></td>
             <td style="color:#64748b;">{{ $topup->approvedBy->name ?? '-' }}</td>
             <td style="color:#64748b;">{{ $topup->created_at->format('d M Y, H:i') }}</td>
+            <td>
+                <form method="POST" action="{{ route('admin.topup.destroy', $topup) }}" onsubmit="return confirm('Batalkan top-up ini? Saldo siswa akan dikurangi.')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-danger" style="padding:0.4rem 0.75rem;font-size:0.8rem;">Batalkan</button>
+                </form>
+            </td>
         </tr>
         @empty
-        <tr><td colspan="6" class="empty-state"><i data-lucide="wallet" size="40"></i><p>Belum ada riwayat top-up</p></td></tr>
+        <tr><td colspan="7" class="empty-state"><i data-lucide="wallet" size="40"></i><p>Belum ada riwayat top-up</p></td></tr>
         @endforelse
         </tbody>
     </table>
