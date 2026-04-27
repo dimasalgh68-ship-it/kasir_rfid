@@ -45,7 +45,7 @@
             <h3 style="margin:0;">Top-Up Saldo</h3>
             <button onclick="document.getElementById('modal-topup').classList.remove('active')" style="background:none;border:none;cursor:pointer;color:#94a3b8;"><i data-lucide="x" size="20"></i></button>
         </div>
-        <form method="POST" action="{{ route('admin.topup.store') }}">
+        <form method="POST" action="{{ route('topup.store') }}">
             @csrf
             <div class="form-group">
                 <label class="form-label">Siswa</label>
@@ -72,5 +72,15 @@
     </div>
 </div>
 
-<script>lucide.createIcons();</script>
+<script>
+    lucide.createIcons();
+    @if(session('snap_token'))
+        window.snap.pay('{{ session('snap_token') }}', {
+            onSuccess: function(result){ window.location.reload(); },
+            onPending: function(result){ window.location.reload(); },
+            onError: function(result){ alert("Pembayaran gagal!"); },
+            onClose: function(){ alert('Anda menutup popup tanpa menyelesaikan pembayaran.'); }
+        });
+    @endif
+</script>
 @endsection

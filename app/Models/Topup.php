@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Topup extends Model
 {
-    protected $fillable = ['user_id', 'amount', 'status', 'method', 'approved_by'];
+    protected $fillable = ['user_id', 'amount', 'status', 'method', 'approved_by', 'snap_token', 'reference_id'];
 
     protected $casts = [
         'amount' => 'decimal:2',

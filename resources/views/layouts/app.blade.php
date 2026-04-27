@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ env('MIDTRANS_CLIENT_KEY') }}"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f1f5f9; min-height: 100vh; }
@@ -49,8 +50,14 @@
         .badge-warning { background: #fef3c7; color: #d97706; }
         .badge-danger { background: #fee2e2; color: #dc2626; }
         .badge-info { background: #e0e7ff; color: #4f46e5; }
-        .table-container { background: white; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; }
-        .table { width: 100%; border-collapse: collapse; }
+        .table-container { 
+            background: white; 
+            border-radius: 16px; 
+            border: 1px solid #e2e8f0; 
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch;
+        }
+        .table { width: 100%; border-collapse: collapse; min-width: 600px; }
         .table th { background: #f8fafc; padding: 0.85rem 1.25rem; text-align: left; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; }
         .table td { padding: 0.85rem 1.25rem; border-top: 1px solid #f1f5f9; font-size: 0.875rem; color: #334155; }
         .table tr:hover td { background: #f8fafc; }
@@ -79,12 +86,20 @@
         .empty-state { text-align: center; padding: 3rem; color: #94a3b8; }
         .empty-state i { margin-bottom: 1rem; opacity: 0.3; }
         @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
+            .sidebar { 
+                transform: translateX(-100%); 
+                width: 280px;
+                box-shadow: 20px 0 50px rgba(0,0,0,0.2);
+            }
             .sidebar.open { transform: translateX(0); }
             .main-content { margin-left: 0; }
+            .topbar { padding: 1rem; }
             .mobile-toggle { display: block; }
-            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; gap: 1rem; }
             .page-content { padding: 1rem; }
+            .modal { padding: 1.5rem; width: 95%; }
+            .topbar-user span { display: none; }
+            .topbar-left h2 { font-size: 1rem; }
         }
     </style>
 </head>

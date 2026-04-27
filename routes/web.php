@@ -19,6 +19,8 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 Route::get('/nfc/check', [DashboardController::class, 'checkNfc'])
     ->middleware(['auth'])->name('nfc.check');
 
+Route::post('/midtrans/callback', [\App\Http\Controllers\TopupController::class, 'callback'])->name('midtrans.callback');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -43,7 +45,6 @@ Route::middleware('auth')->group(function () {
         Route::delete('/rfid/{card}', [RfidController::class, 'destroy'])->name('rfid.destroy');
 
         Route::get('/topup', [TopupController::class, 'index'])->name('topup.index');
-        Route::post('/topup', [TopupController::class, 'store'])->name('topup.store');
         Route::delete('/topup/{topup}', [TopupController::class, 'destroy'])->name('topup.destroy');
     });
 
@@ -64,6 +65,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:student')->prefix('student')->name('student.')->group(function () {
         Route::get('/topup', [TopupController::class, 'index'])->name('topup.index');
     });
+
+    // Shared Top-up Route
+    Route::post('/topup', [TopupController::class, 'store'])->name('topup.store');
 });
 
 require __DIR__.'/auth.php';

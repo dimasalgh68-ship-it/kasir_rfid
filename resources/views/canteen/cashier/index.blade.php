@@ -2,12 +2,12 @@
 @section('page-title', 'Kasir Kantin')
 @section('content')
 
-<div style="display: grid; grid-template-columns: 1fr 400px; gap: 1.5rem; height: calc(100vh - 140px);">
+<div class="cashier-layout">
     {{-- Left: Menu Selection --}}
-    <div style="display: flex; flex-direction: column; gap: 1.5rem; overflow: hidden;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1 style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">Kasir Kantin</h1>
-            <div style="display: flex; gap: 0.5rem;">
+    <div class="menu-section">
+        <div class="section-header">
+            <h1 class="page-title">Kasir Kantin</h1>
+            <div class="category-tabs">
                 <button class="category-btn active" data-category="all">Semua</button>
                 @foreach($categories as $cat)
                 <button class="category-btn" data-category="{{ $cat }}">{{ $cat }}</button>
@@ -46,21 +46,21 @@
     </div>
 
     {{-- Right: Cart & Payment --}}
-    <div class="card-premium" style="display: flex; flex-direction: column; padding: 0; overflow: hidden; height: 100%;">
-        <div style="padding: 1.25rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+    <div class="cart-section card-premium">
+        <div class="cart-header">
             <h3 style="margin: 0; font-weight: 700;">Pesanan</h3>
             <button onclick="clearCart()" style="background: none; border: none; color: #ef4444; font-size: 0.8rem; cursor: pointer;">Hapus Semua</button>
         </div>
 
-        <div id="cart-items" style="flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
+        <div id="cart-items" class="cart-items-container">
             {{-- Cart items will be injected here --}}
-            <div id="empty-cart" style="text-align: center; color: #94a3b8; margin-top: 2rem;">
+            <div id="empty-cart" class="empty-cart-state">
                 <i data-lucide="shopping-cart" size="48" style="opacity: 0.2; margin-bottom: 1rem;"></i>
                 <p>Belum ada item dipilih</p>
             </div>
         </div>
 
-        <div style="padding: 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9;">
+        <div class="cart-footer">
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: #64748b;">
                 <span>Subtotal</span>
                 <span id="subtotal">Rp 0</span>
@@ -113,6 +113,74 @@
 </div>
 
 <style>
+    .cashier-layout {
+        display: grid; 
+        grid-template-columns: 1fr 400px; 
+        gap: 1.5rem; 
+        height: calc(100vh - 140px);
+    }
+    .menu-section {
+        display: flex; 
+        flex-direction: column; 
+        gap: 1.5rem; 
+        overflow: hidden;
+    }
+    .section-header {
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .category-tabs {
+        display: flex; 
+        gap: 0.5rem;
+        overflow-x: auto;
+        padding-bottom: 0.25rem;
+    }
+    .cart-section {
+        display: flex; 
+        flex-direction: column; 
+        padding: 0 !important; 
+        overflow: hidden; 
+        height: 100%;
+    }
+    .cart-header {
+        padding: 1.25rem; 
+        border-bottom: 1px solid #f1f5f9; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
+    }
+    .cart-items-container {
+        flex: 1; 
+        overflow-y: auto; 
+        padding: 1.25rem; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 1rem;
+    }
+    .cart-footer {
+        padding: 1.5rem; 
+        background: #f8fafc; 
+        border-top: 1px solid #f1f5f9;
+    }
+    .empty-cart-state {
+        text-align: center; 
+        color: #94a3b8; 
+        margin-top: 2rem;
+    }
+    @media (max-width: 1024px) {
+        .cashier-layout {
+            grid-template-columns: 1fr;
+            height: auto;
+            overflow: visible;
+        }
+        .cart-section {
+            height: 500px;
+            margin-top: 2rem;
+        }
+    }
     .category-btn {
         padding: 0.5rem 1rem;
         border-radius: 8px;
@@ -122,6 +190,7 @@
         font-weight: 600;
         cursor: pointer;
         transition: all 0.2s;
+        white-space: nowrap;
     }
     .category-btn.active {
         background: #6366f1;
