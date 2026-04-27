@@ -46,6 +46,9 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/topup', [TopupController::class, 'index'])->name('topup.index');
         Route::delete('/topup/{topup}', [TopupController::class, 'destroy'])->name('topup.destroy');
+
+        Route::get('/settings', [\App\Http\Controllers\SettingController::class, 'index'])->name('settings.index');
+        Route::patch('/settings', [\App\Http\Controllers\SettingController::class, 'update'])->name('settings.update');
     });
 
     // Canteen / Admin Routes

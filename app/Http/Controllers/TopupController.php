@@ -15,8 +15,8 @@ class TopupController extends Controller
 {
     public function __construct()
     {
-        Config::$serverKey = env('MIDTRANS_SERVER_KEY');
-        Config::$isProduction = env('MIDTRANS_IS_PRODUCTION', false);
+        Config::$serverKey = \App\Models\Setting::getValue('midtrans_server_key', env('MIDTRANS_SERVER_KEY'));
+        Config::$isProduction = (bool) \App\Models\Setting::getValue('midtrans_is_production', env('MIDTRANS_IS_PRODUCTION', false));
         Config::$isSanitized = env('MIDTRANS_IS_SANITIZED', true);
         Config::$is3ds = env('MIDTRANS_IS_3DS', true);
     }
@@ -109,7 +109,7 @@ class TopupController extends Controller
 
     public function callback(Request $request)
     {
-        $serverKey = env('MIDTRANS_SERVER_KEY');
+        $serverKey = \App\Models\Setting::getValue('midtrans_server_key', env('MIDTRANS_SERVER_KEY'));
         $hashed = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
         
         if ($hashed == $request->signature_key) {

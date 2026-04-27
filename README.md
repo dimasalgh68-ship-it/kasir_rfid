@@ -12,6 +12,7 @@ Sistem Kantin Digital modern berbasis RFID (Radio Frequency Identification) dan 
 
 - **Tap-to-Pay**: Transaksi super cepat menggunakan kartu RFID atau tag NFC.
 - **Top-up Mandiri**: Pengisian saldo otomatis via **Midtrans** (Virtual Account, E-Wallet, QRIS).
+- **System Settings UI**: Konfigurasi API Midtrans dan nama aplikasi langsung melalui Dashboard Admin tanpa menyentuh file `.env`.
 - **Real-time Monitoring**: Dashboard kasir yang terupdate otomatis menggunakan **Firebase Realtime Database**.
 - **Manajemen User & Kartu**: Pendaftaran kartu RFID siswa yang mudah oleh Admin.
 - **Riwayat Transaksi**: Lacak setiap transaksi masuk dan keluar secara detail.

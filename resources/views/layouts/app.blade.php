@@ -132,6 +132,9 @@
                 <a href="{{ route('canteen.menu.index') }}" class="sidebar-link {{ request()->routeIs('canteen.menu.*') ? 'active' : '' }}">
                     <i data-lucide="utensils-crossed" size="20"></i> Menu Kantin
                 </a>
+                <a href="{{ route('admin.settings.index') }}" class="sidebar-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
+                    <i data-lucide="settings-2" size="20"></i> Pengaturan Sistem
+                </a>
             @elseif(Auth::user()->isCanteen())
                 <div class="sidebar-section">Kantin</div>
                 <a href="{{ route('canteen.cashier.index') }}" class="sidebar-link {{ request()->routeIs('canteen.cashier.*') ? 'active' : '' }}">
