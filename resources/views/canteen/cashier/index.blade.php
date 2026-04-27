@@ -94,7 +94,7 @@
             </div>
             <h2 id="success-title">Berhasil!</h2>
             <p id="success-msg" style="color: #64748b; margin-bottom: 1.5rem;"></p>
-            <button id="btn-reset-pos" class="btn btn-success" style="width: 100%; justify-content: center;">Selesai</button>
+            <button onclick="resetPOS()" class="btn btn-success" style="width: 100%; justify-content: center;">Selesai</button>
         </div>
     </div>
 </div>
@@ -226,74 +226,33 @@
         document.getElementById('pay-btn').disabled = cart.length === 0;
     }
 
-    function resetPOS() {
-        // Reset state
-        cart = [];
-        renderCart();
-        
-        // Reset UI steps
-        document.getElementById('payment-step-success').style.display = 'none';
-        document.getElementById('payment-step-scan').style.display = 'block';
-        
-        // Close modal
-        closePaymentModal();
-    }
-
-    // Add explicit listener for the Done button to ensure it works
-    document.addEventListener('DOMContentLoaded', () => {
-        const resetBtn = document.getElementById('btn-reset-pos');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', resetPOS);
-        }
-    });
-
-    // Firebase Integration for Cashier
-    const firebaseConfig = {
-        databaseURL: "{{ env('FIREBASE_DATABASE_URL') }}"
-    };
-
-    // Load Firebase
-    const fbScript = document.createElement('script');
-    fbScript.src = "https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js";
-    document.head.appendChild(fbScript);
-
-    fbScript.onload = () => {
-        const dbScript = document.createElement('script');
-        dbScript.src = "https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js";
-        document.head.appendChild(dbScript);
-
-        dbScript.onload = () => {
-            firebase.initializeApp(firebaseConfig);
-            window.firebaseDB = firebase.database();
-        };
-    };
-
-    function startFirebaseListener() {
-        if (!window.firebaseDB) return;
-        
-        // Listen for latest scan
-        window.firebaseDB.ref('scans/latest').on('value', (snapshot) => {
-            const data = snapshot.val();
-            // Hanya proses jika modal sedang terbuka di langkah scan
-            const modalActive = document.getElementById('modal-payment').classList.contains('active');
-            const stepScanActive = document.getElementById('payment-step-scan').style.display !== 'none';
-            
-            if (modalActive && stepScanActive && data && data.rfid_uid) {
-                console.log("Card detected in Cashier: " + data.rfid_uid);
-                processPayment(data.rfid_uid);
-            }
-        });
-    }
-
-    function stopFirebaseListener() {
-        if (window.firebaseDB) {
-            window.firebaseDB.ref('scans/latest').off();
-        }
-    }
-
     function showPaymentModal() {
         document.getElementById('modal-payment').classList.add('active');
-        startFirebaseListener();
+        // Listen for RFID from Firebase (Auto-poll check)
+        startFirebasePolling();
+    }
+
+    function closePaymentModal() {
+        document.getElementById('modal-payment').classList.remove('active');
+        stopFirebasePolling();
+    }
+
+    let pollInterval;
+    function startFirebasePolling() {
+        // Logika untuk mendengarkan /scans/latest dari Firebase via API Laravel
+        pollInterval = setInterval(async () => {
+            try {
+                const response = await fetch('/canteen/cashier/poll-scan');
+                const data = await response.json();
+                if (data.success && data.uid) {
+                    processPayment(data.uid);
+                }
+            } catch (e) {}
+        }, 2000);
+    }
+
+    function stopFirebasePolling() {
+        clearInterval(pollInterval);
     }
 
     async function startNfcScan() {
@@ -315,10 +274,7 @@
     }
 
     async function processPayment(uid) {
-        // Mencegah proses ganda jika sedang memproses
-        if (document.getElementById('payment-step-processing').style.display === 'block') return;
-        
-        stopFirebaseListener();
+        stopFirebasePolling();
         
         document.getElementById('payment-step-scan').style.display = 'none';
         document.getElementById('payment-step-processing').style.display = 'block';
@@ -341,28 +297,26 @@
             if (data.success) {
                 document.getElementById('payment-step-processing').style.display = 'none';
                 document.getElementById('payment-step-success').style.display = 'block';
-                document.getElementById('success-msg').innerText = `Terima kasih ${data.user_name}!\nSisa Saldo: Rp ${new Intl.NumberFormat('id-ID').format(data.new_balance)}`;
-                
-                // Trigger sound or haptic if needed
-                if (window.navigator.vibrate) window.navigator.vibrate(200);
+                document.getElementById('success-msg').innerText = `Terima kasih ${data.user_name}!\nSisa Saldo: Rp ${data.new_balance}`;
             } else {
                 alert(data.message);
                 document.getElementById('payment-step-processing').style.display = 'none';
                 document.getElementById('payment-step-scan').style.display = 'block';
-                startFirebaseListener();
+                startFirebasePolling();
             }
         } catch (e) {
-            console.error(e);
             alert('Terjadi kesalahan server');
             document.getElementById('payment-step-processing').style.display = 'none';
             document.getElementById('payment-step-scan').style.display = 'block';
-            startFirebaseListener();
         }
     }
 
-    function closePaymentModal() {
-        document.getElementById('modal-payment').classList.remove('active');
-        stopFirebaseListener();
+    function resetPOS() {
+        cart = [];
+        renderCart();
+        closePaymentModal();
+        document.getElementById('payment-step-success').style.display = 'none';
+        document.getElementById('payment-step-scan').style.display = 'block';
     }
 
     // Filter Categories
