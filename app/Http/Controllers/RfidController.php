@@ -15,7 +15,8 @@ class RfidController extends Controller
     {
         $cards = RfidCard::with('user')->latest()->get();
         $students = User::where('role', 'student')->doesntHave('rfidCard')->get();
-        return view('admin.rfid.index', compact('cards', 'students'));
+        $allStudents = User::where('role', 'student')->get();
+        return view('admin.rfid.index', compact('cards', 'students', 'allStudents'));
     }
 
     public function register(Request $request)
