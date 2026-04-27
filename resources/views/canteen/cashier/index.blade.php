@@ -17,16 +17,29 @@
 
         <div id="menu-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; overflow-y: auto; padding-right: 0.5rem;">
             @foreach($menuItems as $item)
-            <div class="menu-item-card" data-category="{{ $item->category }}" onclick="addToCart({{ $item->id }}, '{{ $item->name }}', {{ $item->price }})">
-                <div style="aspect-ratio: 1; border-radius: 12px; background: #f1f5f9; margin-bottom: 0.75rem; overflow: hidden;">
+            <div class="menu-item-card {{ $item->stock <= 0 ? 'disabled' : '' }}" 
+                 data-category="{{ $item->category }}" 
+                 onclick="addToCart({{ $item->id }}, '{{ $item->name }}', {{ $item->price }}, {{ $item->stock }})">
+                <div style="aspect-ratio: 1; border-radius: 12px; background: #f1f5f9; margin-bottom: 0.75rem; overflow: hidden; position: relative;">
                     @if($item->image)
-                        <img src="{{ asset('storage/'.$item->image) }}" style="width: 100%; height: 100%; object-fit: cover;">
+                        <img src="{{ asset('storage/'.$item->image) }}" style="width: 100%; height: 100%; object-fit: cover; {{ $item->stock <= 0 ? 'filter: grayscale(1);' : '' }}">
                     @else
                         <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #94a3b8;"><i data-lucide="utensils" size="32"></i></div>
                     @endif
+
+                    @if($item->stock <= 0)
+                    <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 0.8rem; text-transform: uppercase;">Habis</div>
+                    @endif
                 </div>
-                <div style="font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">{{ $item->name }}</div>
-                <div style="color: #6366f1; font-weight: 800; font-size: 0.9rem;">Rp {{ number_format($item->price, 0, ',', '.') }}</div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <div style="font-weight: 700; color: #1e293b; margin-bottom: 0.15rem;">{{ $item->name }}</div>
+                        <div style="color: #6366f1; font-weight: 800; font-size: 0.9rem;">Rp {{ number_format($item->price, 0, ',', '.') }}</div>
+                    </div>
+                    <div style="font-size: 0.65rem; color: #94a3b8; font-weight: 600; text-align: right;">
+                        Stok: {{ $item->stock }}
+                    </div>
+                </div>
             </div>
             @endforeach
         </div>
@@ -169,12 +182,20 @@
     let cart = [];
     let total = 0;
 
-    function addToCart(id, name, price) {
+    function addToCart(id, name, price, stock) {
         const existing = cart.find(i => i.id === id);
         if (existing) {
+            if (existing.qty >= stock) {
+                alert('Stok tidak mencukupi!');
+                return;
+            }
             existing.qty++;
         } else {
-            cart.push({ id, name, price, qty: 1 });
+            if (stock <= 0) {
+                alert('Stok habis!');
+                return;
+            }
+            cart.push({ id, name, price, qty: 1, stock });
         }
         renderCart();
     }
@@ -182,6 +203,10 @@
     function updateQty(id, delta) {
         const item = cart.find(i => i.id === id);
         if (item) {
+            if (delta > 0 && item.qty >= item.stock) {
+                alert('Stok tidak mencukupi!');
+                return;
+            }
             item.qty += delta;
             if (item.qty <= 0) {
                 cart = cart.filter(i => i.id !== id);

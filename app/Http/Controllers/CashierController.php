@@ -24,7 +24,8 @@ class CashierController extends Controller
     {
         $request->validate([
             'rfid_uid' => 'required|string',
-            'items' => 'required|array',
+            'device_id' => 'nullable|string',
+            'items' => 'required|array|min:1',
             'items.*.id' => 'required|exists:menu_items,id',
             'items.*.quantity' => 'required|integer|min:1',
         ]);
@@ -42,11 +43,17 @@ class CashierController extends Controller
 
         $totalAmount = 0;
         $orderItems = [];
+        $menuItemsToUpdate = [];
 
         foreach ($request->items as $itemData) {
             $menuItem = MenuItem::find($itemData['id']);
+            
             if (!$menuItem->is_available) {
                 return response()->json(['success' => false, 'message' => "Menu {$menuItem->name} tidak tersedia!"], 400);
+            }
+
+            if ($menuItem->stock < $itemData['quantity']) {
+                return response()->json(['success' => false, 'message' => "Stok {$menuItem->name} tidak mencukupi! (Sisa: {$menuItem->stock})"], 400);
             }
             
             $subtotal = $menuItem->price * $itemData['quantity'];
@@ -57,6 +64,11 @@ class CashierController extends Controller
                 'quantity' => $itemData['quantity'],
                 'price' => $menuItem->price,
                 'subtotal' => $subtotal,
+            ];
+
+            $menuItemsToUpdate[] = [
+                'model' => $menuItem,
+                'qty' => $itemData['quantity']
             ];
         }
 
@@ -78,9 +90,14 @@ class CashierController extends Controller
             ], 400);
         }
 
-        $result = DB::transaction(function () use ($card, $totalAmount, $orderItems) {
+        $result = DB::transaction(function () use ($card, $totalAmount, $orderItems, $menuItemsToUpdate) {
             // Potong saldo
             $card->decrement('balance', $totalAmount);
+
+            // Kurangi stok menu
+            foreach ($menuItemsToUpdate as $item) {
+                $item['model']->decrement('stock', $item['qty']);
+            }
 
             // Simpan order
             $order = Order::create([

@@ -21,8 +21,11 @@ class RfidController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'user_id' => 'required|exists:users,id|unique:rfid_cards,user_id',
             'rfid_uid' => 'required|string|unique:rfid_cards,rfid_uid',
+        ], [
+            'user_id.unique' => 'Siswa ini sudah memiliki kartu RFID yang terdaftar.',
+            'rfid_uid.unique' => 'Kartu/Tag ini sudah terdaftar di sistem.',
         ]);
 
         RfidCard::create([
