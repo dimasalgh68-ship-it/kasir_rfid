@@ -86,8 +86,8 @@ class FirebaseListener extends Command
                 $this->error("Error: " . $e->getMessage());
             }
 
-            // Poll setiap 1 detik
-            sleep(1);
+            // Poll setiap 0.5 detik (lebih responsif)
+            usleep(500000);
         }
     }
 }

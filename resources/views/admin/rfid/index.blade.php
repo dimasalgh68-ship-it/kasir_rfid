@@ -71,9 +71,9 @@
             <div class="form-group">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem;">
                     <label class="form-label" style="margin-bottom:0;">UID Kartu NFC/RFID</label>
-                    <span id="reader-status" style="font-size:0.7rem;color:#10b981;display:flex;align-items:center;gap:0.25rem;font-weight:600;">
-                        <span style="width:6px;height:6px;background:#10b981;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite;"></span>
-                        Reader Ready
+                    <span id="reader-status" style="font-size:0.7rem;color:#94a3b8;display:flex;align-items:center;gap:0.25rem;font-weight:600;">
+                        <span id="reader-dot" style="width:6px;height:6px;background:#94a3b8;border-radius:50%;display:inline-block;"></span>
+                        <span id="reader-text">Mengecek Reader...</span>
                     </span>
                 </div>
                 <div style="display:flex;gap:0.5rem;">
@@ -164,6 +164,22 @@
                     }, 2000);
                     
                     console.log("Card detected: " + data.rfid_uid);
+                }
+            });
+
+            // Listen for device status
+            database.ref('devices/ESP32-KANTIN-01/status').on('value', (snapshot) => {
+                const status = snapshot.val();
+                if (status === 'online') {
+                    document.getElementById('reader-status').style.color = '#10b981';
+                    document.getElementById('reader-dot').style.background = '#10b981';
+                    document.getElementById('reader-dot').style.animation = 'pulse 1.5s infinite';
+                    document.getElementById('reader-text').innerText = 'Reader Ready';
+                } else {
+                    document.getElementById('reader-status').style.color = '#ef4444';
+                    document.getElementById('reader-dot').style.background = '#ef4444';
+                    document.getElementById('reader-dot').style.animation = 'none';
+                    document.getElementById('reader-text').innerText = 'Reader Offline';
                 }
             });
         };

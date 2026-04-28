@@ -2,6 +2,21 @@
 @section('page-title', 'Dashboard')
 @section('content')
 
+<style>
+    @media (max-width: 768px) {
+        .balance-card h2 {
+            font-size: 1.75rem !important;
+            word-break: break-word;
+        }
+        .mobile-flex-wrap {
+            flex-wrap: wrap;
+        }
+        .stat-card {
+            padding: 1rem;
+        }
+    }
+</style>
+
 @if(Auth::user()->isAdmin())
 {{-- ADMIN DASHBOARD --}}
 <div class="grid grid-4" style="margin-bottom: 1.5rem;">
@@ -123,7 +138,7 @@
             </div>
             <div style="background: rgba(255,255,255,0.2); padding: 0.75rem; border-radius: 12px;"><i data-lucide="credit-card" size="24" color="white"></i></div>
         </div>
-        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem;">
+        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem;" class="mobile-flex-wrap">
             @if($card)
                 <span class="badge" style="background: rgba(255,255,255,0.2); color: white; font-family: monospace;">UID: {{ $card->rfid_uid }}</span>
                 <span style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: rgba(255,255,255,0.8);"><span style="width: 8px; height: 8px; border-radius: 50%; background: #4ade80;"></span> Aktif</span>

@@ -7,11 +7,11 @@
  * Wiring ESP32 -> RC522:
  *   3.3V    -> 3.3V
  *   GND     -> GND
- *   GPIO 5  -> SDA (SS)
- *   GPIO 18 -> SCK
- *   GPIO 23 -> MOSI
- *   GPIO 19 -> MISO
- *   GPIO 21 -> RST
+ *   D5  -> SDA (SS)
+ *   D18 -> SCK
+ *   D23 -> MOSI
+ *   D19 -> MISO
+ *   D21 -> RST
  * 
  * Buzzer -> GPIO 4
  * 
@@ -105,22 +105,28 @@ void loop() {
         Serial.println("[HEARTBEAT] OK");
     }
 
-    // Cek response tiap 1s
-    if (millis() - lastCheck > 1000) {
+    // Cek response tiap 500ms (lebih responsif)
+    if (millis() - lastCheck > 500) {
         checkResponse();
         lastCheck = millis();
     }
 
-    // Baca kartu RC522
+    // Baca kartu RC522 (hanya jika sudah melewati cooldown 2 detik)
+    static unsigned long lastScanTime = 0;
+    if (millis() - lastScanTime < 2000) return;
+
     if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) return;
 
+    lastScanTime = millis();
     String uid = "";
     for (byte i = 0; i < rfid.uid.size; i++) {
         if (rfid.uid.uidByte[i] < 0x10) uid += "0";
         uid += String(rfid.uid.uidByte[i], HEX);
     }
     uid.toUpperCase();
+    Serial.println("\n[SCAN] RFID terdeteksi!");
     Serial.println("[SCAN] UID: " + uid);
+    Serial.println("[SCAN] Sedang memproses...");
 
     // Kirim ke Firebase
     FirebaseJson json;
@@ -129,40 +135,55 @@ void loop() {
     json.set("status", "pending");
 
     if (Firebase.RTDB.setJSON(&fbdo, "/scans/latest", &json)) {
-        Serial.println("[OK] Scan terkirim");
+        Serial.println("[OK] Data terkirim ke server");
         tone(BUZZER_PIN, 1500, 100);
-        delay(150);
-        noTone(BUZZER_PIN);
     } else {
-        Serial.println("[ERROR] " + fbdo.errorReason());
+        Serial.println("[ERROR] Gagal kirim: " + fbdo.errorReason());
         buzzError();
     }
 
     rfid.PICC_HaltA();
     rfid.PCD_StopCrypto1();
-    delay(2000);
 }
 
 void checkResponse() {
-    if (Firebase.RTDB.getString(&fbdo, "/responses/" + String(DEVICE_ID) + "/status")) {
-        String status = fbdo.stringData();
-        if (status.length() > 0) {
-            String name = "";
+    if (Firebase.RTDB.getJSON(&fbdo, "/responses/" + String(DEVICE_ID))) {
+        if (fbdo.dataType() != "null") {
+            FirebaseJson &json = fbdo.jsonObject();
+            FirebaseJsonData result;
+            
+            String status = "";
+            String name = "Guest";
             String bal = "0";
+            String msg = "";
 
-            if (Firebase.RTDB.getString(&fbdo, "/responses/" + String(DEVICE_ID) + "/user_name")) {
-                name = fbdo.stringData();
+            if (json.get(result, "status")) status = result.stringValue;
+            if (json.get(result, "user_name")) name = result.stringValue;
+            if (json.get(result, "balance")) bal = result.stringValue;
+            if (json.get(result, "message")) msg = result.stringValue;
+
+            if (status.length() > 0) {
+                Serial.println("\n==================================");
+                Serial.println("       HASIL SCAN RFID");
+                Serial.println("==================================");
+                
+                if (status == "success") {
+                    Serial.println("Status  : BERHASIL");
+                    Serial.println("User    : " + name);
+                    Serial.println("Saldo   : Rp " + bal);
+                    if (msg != "Kartu valid") Serial.println("Pesan   : " + msg);
+                    buzzSuccess();
+                } else {
+                    Serial.println("Status  : GAGAL");
+                    if (name != "Guest") Serial.println("User    : " + name);
+                    Serial.println("Pesan   : " + msg);
+                    buzzError();
+                }
+                Serial.println("==================================\n");
+
+                // Hapus response setelah dibaca agar tidak terbaca ulang
+                Firebase.RTDB.deleteNode(&fbdo, "/responses/" + String(DEVICE_ID));
             }
-            if (Firebase.RTDB.getString(&fbdo, "/responses/" + String(DEVICE_ID) + "/balance")) {
-                bal = fbdo.stringData();
-            }
-
-            Serial.println("User: " + name + " | Saldo: Rp " + bal + " | Status: " + status);
-
-            if (status == "success") buzzSuccess();
-            else buzzError();
-
-            Firebase.RTDB.deleteNode(&fbdo, "/responses/" + String(DEVICE_ID));
         }
     }
 }

@@ -48,7 +48,10 @@
     {{-- Right: Cart & Payment --}}
     <div class="cart-section card-premium">
         <div class="cart-header">
-            <h3 style="margin: 0; font-weight: 700;">Pesanan</h3>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <button class="cart-close-mobile" onclick="toggleMobileCart()"><i data-lucide="arrow-left" size="20"></i></button>
+                <h3 style="margin: 0; font-weight: 700;">Pesanan</h3>
+            </div>
             <button onclick="clearCart()" style="background: none; border: none; color: #ef4444; font-size: 0.8rem; cursor: pointer;">Hapus Semua</button>
         </div>
 
@@ -75,6 +78,18 @@
             </button>
         </div>
     </div>
+</div>
+
+<!-- Mobile Cart Toggle -->
+<div class="mobile-cart-toggle" onclick="toggleMobileCart()">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <div style="position: relative;">
+            <i data-lucide="shopping-cart"></i>
+            <span id="mobile-cart-count" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; font-weight: bold;">0</span>
+        </div>
+        <span id="mobile-cart-total" style="font-weight: 800; color: #1e293b; margin-left: 0.5rem;">Rp 0</span>
+    </div>
+    <div style="font-weight: 700; color: #6366f1; background: #e0e7ff; padding: 0.5rem 1rem; border-radius: 8px;">Lihat Pesanan</div>
 </div>
 
 {{-- Payment Modal --}}
@@ -170,15 +185,69 @@
         color: #94a3b8; 
         margin-top: 2rem;
     }
+    .mobile-cart-toggle {
+        display: none;
+    }
+    .cart-close-mobile {
+        display: none;
+        background: none;
+        border: none;
+        color: #64748b;
+        cursor: pointer;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+    }
+
     @media (max-width: 1024px) {
         .cashier-layout {
             grid-template-columns: 1fr;
             height: auto;
             overflow: visible;
+            padding-bottom: 80px; /* Space for the floating bottom bar */
         }
         .cart-section {
-            height: 500px;
-            margin-top: 2rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 100;
+            background: white;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+            margin: 0;
+            border-radius: 0;
+        }
+        .cart-section.open {
+            transform: translateX(0);
+        }
+        .mobile-cart-toggle {
+            display: flex;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
+            z-index: 40;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #f1f5f9;
+            cursor: pointer;
+        }
+        .cart-header {
+            padding-top: max(1.25rem, env(safe-area-inset-top));
+        }
+        .cart-close-mobile {
+            display: flex;
+        }
+        .menu-item-card {
+            margin-bottom: 0;
+        }
+        #menu-grid {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
         }
     }
     .category-btn {
@@ -292,7 +361,17 @@
     const cartContainer = document.getElementById('cart-items');
     const emptyState = document.getElementById('empty-cart');
 
+    function toggleMobileCart() {
+        document.querySelector('.cart-section').classList.toggle('open');
+        lucide.createIcons();
+    }
+
     function renderCart() {
+        let totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+        if (document.getElementById('mobile-cart-count')) {
+            document.getElementById('mobile-cart-count').innerText = totalItems;
+        }
+
         if (cart.length === 0) {
             cartContainer.innerHTML = '';
             cartContainer.appendChild(emptyState);
@@ -324,6 +403,9 @@
 
         document.getElementById('subtotal').innerText = `Rp ${new Intl.NumberFormat('id-ID').format(total)}`;
         document.getElementById('total').innerText = `Rp ${new Intl.NumberFormat('id-ID').format(total)}`;
+        if (document.getElementById('mobile-cart-total')) {
+            document.getElementById('mobile-cart-total').innerText = `Rp ${new Intl.NumberFormat('id-ID').format(total)}`;
+        }
         document.getElementById('pay-btn').disabled = cart.length === 0;
     }
 
